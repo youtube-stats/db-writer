@@ -1,9 +1,24 @@
 import atexit
+import datetime
 import flask
 from message import message_pb2
 import psycopg2
 import queue
 import threading
+from typing import List
+
+
+class SubRow:
+    def __init__(self, time: datetime.datetime, idx: int, subs: int):
+        self.time: datetime.datetime = time
+        self.idx: int = idx
+        self.subs: int = subs
+
+
+class SubStore:
+    def __init__(self):
+        self.store: List[SubRow] = []
+
 
 app: flask.Flask = flask.Flask(__name__)
 message_queue: queue.Queue = queue.Queue()
@@ -14,6 +29,8 @@ pg_port: str = '5432'
 database: str = 'youtube'
 server_host: str = '0.0.0.0'
 server_port: str = '8081'
+write_threshold: int = 500
+store: SubStore = SubStore()
 
 
 def init_ack_message() -> str:
