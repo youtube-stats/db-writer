@@ -1,5 +1,6 @@
 import atexit
 import flask
+from message import message_pb2
 import psycopg2
 
 app: flask.Flask = flask.Flask(__name__)
@@ -12,9 +13,18 @@ server_host: str = '0.0.0.0'
 server_port: str = '8081'
 
 
-@app.route("/")
-def hello():
-    return "Hello World!"
+def init_ack_message() -> str:
+    msg_obj: message_pb2.Ack = message_pb2.Ack()
+    msg_obj.ok = True
+    return msg_obj.SerializeToString()
+
+
+message = init_ack_message()
+
+
+@app.route('/load', methods=['POST'])
+def hello() -> str:
+    return message
 
 
 def connect() -> psycopg2:
