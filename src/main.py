@@ -1,8 +1,9 @@
 import atexit
 import flask
-import message
+from message import message_pb2
 import psycopg2
 import queue
+import threading
 
 app: flask.Flask = flask.Flask(__name__)
 message_queue: queue.Queue = queue.Queue()
@@ -16,7 +17,7 @@ server_port: str = '8081'
 
 
 def init_ack_message() -> str:
-    msg_obj: message.message_pb2.Ack = message.message_pb2.Ack()
+    msg_obj: message_pb2.Ack = message_pb2.Ack()
     msg_obj.ok = True
     return msg_obj.SerializeToString()
 
@@ -26,7 +27,7 @@ message_ack = init_ack_message()
 
 @app.route('/load', methods=['POST'])
 def hello() -> str:
-    sub_message: message.message_pb2.SubMessage = message.message_pb2.SubMessage()
+    sub_message: message_pb2.SubMessage = message_pb2.SubMessage()
     sub_message.ParseFromString(flask.request.data)
     print('Got message', sub_message.SerializeToString())
 
@@ -52,8 +53,17 @@ def connect() -> psycopg2:
     return conn
 
 
+def write_daemon() -> None:
+    while True:
+        print('Write daemon - waiting for message')
+        payload: message_pb2.SubMessage = message_queue.get(block=True)
+        print('Write daemon - Got message')
+
+
 def main() -> None:
     conn: psycopg2 = connect()
+    threading.Thread(target=write_daemon, daemon=True).start()
+
     app.run(host=server_host, port=server_port, debug=True)
 
 
