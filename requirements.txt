@@ -1,3 +1,4 @@
 flask
+protobuf
 psycopg2
 psycopg2-binary
