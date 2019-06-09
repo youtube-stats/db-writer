@@ -25,7 +25,7 @@ def init_ack_message() -> str:
 message_ack = init_ack_message()
 
 
-@app.route('/load', methods=['POST'])
+@app.route('/post', methods=['POST'])
 def hello() -> str:
     sub_message: message_pb2.SubMessage = message_pb2.SubMessage()
     sub_message.ParseFromString(flask.request.data)
