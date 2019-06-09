@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package message;
+
+message SubMessage {
+    uint32 timestamp = 1;
+    repeated int32 ids = 2;
+    repeated int32 subs = 3;
+}
+
+message Ack {
+    bool ok = 1;
+}
