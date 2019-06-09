@@ -1,9 +1,11 @@
 import atexit
 import flask
-from message import message_pb2
+import message
 import psycopg2
+import queue
 
 app: flask.Flask = flask.Flask(__name__)
+message_queue: queue.Queue = queue.Queue()
 user: str = 'admin'
 password: str = ''
 pg_host: str = 'localhost'
@@ -14,17 +16,23 @@ server_port: str = '8081'
 
 
 def init_ack_message() -> str:
-    msg_obj: message_pb2.Ack = message_pb2.Ack()
+    msg_obj: message.message_pb2.Ack = message.message_pb2.Ack()
     msg_obj.ok = True
     return msg_obj.SerializeToString()
 
 
-message = init_ack_message()
+message_ack = init_ack_message()
 
 
 @app.route('/load', methods=['POST'])
 def hello() -> str:
-    return message
+    sub_message: message.message_pb2.SubMessage = message.message_pb2.SubMessage()
+    sub_message.ParseFromString(flask.request.data)
+    print('Got message', sub_message.SerializeToString())
+
+    message_queue.put_nowait(sub_message)
+
+    return message_ack
 
 
 def connect() -> psycopg2:
