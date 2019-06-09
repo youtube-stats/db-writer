@@ -3,6 +3,7 @@ import datetime
 import flask
 from message import message_pb2
 import psycopg2
+import pytz
 import queue
 import threading
 from typing import List
@@ -19,6 +20,12 @@ class SubStore:
     def __init__(self):
         self.store: List[SubRow] = []
 
+    def append(self, sub: SubRow):
+        self.store.append(sub)
+
+    def len(self):
+        return len(self.store)
+
 
 app: flask.Flask = flask.Flask(__name__)
 message_queue: queue.Queue = queue.Queue()
@@ -29,6 +36,7 @@ pg_port: str = '5432'
 database: str = 'youtube'
 server_host: str = '0.0.0.0'
 server_port: str = '8081'
+tz = pytz.timezone('America/Los_Angeles')
 write_threshold: int = 500
 store: SubStore = SubStore()
 
@@ -70,11 +78,29 @@ def connect() -> psycopg2:
     return conn
 
 
+def append_to_store(payload: message_pb2.SubMessage) -> None:
+    length: int = len(payload.idx)
+    time: datetime.datetime = datetime.datetime.fromtimestamp(payload.time, tz)
+
+    for i in range(length):
+        idx: int = payload.idx[i]
+        sub: int = payload.subs[i]
+
+        row: SubRow = SubRow(time, idx, sub)
+        store.append(row)
+
+
+def write_payload_handler(payload: message_pb2.SubMessage) -> None:
+    append_to_store(payload)
+    print('Size of store is ', store.len())
+
+
 def write_daemon() -> None:
     while True:
         print('Write daemon - waiting for message')
         payload: message_pb2.SubMessage = message_queue.get(block=True)
         print('Write daemon - Got message')
+        write_payload_handler(payload)
 
 
 def main() -> None:
