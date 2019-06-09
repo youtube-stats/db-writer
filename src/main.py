@@ -62,7 +62,7 @@ def write_daemon() -> None:
 
 def main() -> None:
     conn: psycopg2 = connect()
-    threading.Thread(target=write_daemon, daemon=True).start()
+    threading.Thread(target=write_daemon, daemon=False).start()
 
     app.run(host=server_host, port=server_port, debug=True)
 
