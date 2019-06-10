@@ -32,6 +32,9 @@ class SubStore:
     def get(self, i: int) -> SubRow:
         return self.store[i]
 
+    def drop(self, n: int) -> None:
+        self.store = self.store[n:]
+
 
 app: flask.Flask = flask.Flask(__name__)
 message_queue: queue.Queue = queue.Queue()
@@ -50,7 +53,7 @@ insert_sql: str = 'INSERT INTO youtube.stats.subs VALUES (%s, %s, %s)'
 
 def connect() -> psycopg2:
     print('Connecting to db')
-    conn: psycopg2 = psycopg2.connect(
+    connection: psycopg2 = psycopg2.connect(
         user=user,
         password=password,
         host=pg_host,
@@ -59,10 +62,10 @@ def connect() -> psycopg2:
 
     def exit_func() -> None:
         print('Closing connection')
-        conn.close()
+        connection.close()
 
     atexit.register(exit_func)
-    return conn
+    return connection
 
 
 conn: psycopg2 = connect()
@@ -109,13 +112,15 @@ def insert_job() -> None:
     conn.commit()
     cursor.close()
 
+    store.drop(write_threshold)
+
 
 def write_payload_handler(payload: message_pb2.SubMessage) -> None:
     append_to_store(payload)
     print('Size of store is ', store.len())
 
     if store.len() > write_threshold:
-        print('Writing', store.len(), 'rows into database')
+        print('Writing', write_threshold, 'rows into database')
         insert_job()
         print('New store size is', store.len())
 
