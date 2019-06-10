@@ -81,7 +81,7 @@ message_ack = init_ack_message()
 def post() -> str:
     sub_message: message_pb2.SubMessage = message_pb2.SubMessage()
     sub_message.ParseFromString(flask.request.data)
-    print('Got message', sub_message.SerializeToString())
+    print('Got message', str(sub_message).replace('\n', ', '))
 
     message_queue.put_nowait(sub_message)
 
@@ -89,11 +89,11 @@ def post() -> str:
 
 
 def append_to_store(payload: message_pb2.SubMessage) -> None:
-    length: int = len(payload.idx)
-    time: datetime.datetime = datetime.datetime.fromtimestamp(payload.time, tz)
+    length: int = len(payload.ids)
+    time: datetime.datetime = datetime.datetime.fromtimestamp(payload.timestamp, tz)
 
     for i in range(length):
-        idx: int = payload.idx[i]
+        idx: int = payload.ids[i]
         sub: int = payload.subs[i]
 
         row: SubRow = SubRow(time, idx, sub)
